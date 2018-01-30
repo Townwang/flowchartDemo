@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Architects+Daughter" rel="stylesheet" type="text/css">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <link rel="stylesheet" type="text/css" href="css/style.css" media="screen" />
+
+    <title>flowchart.js</title>
+
+  
+  </head>
+
+  <body>
+
+      <section id="flowchart">
+
+<div class=" editor1 diagram1">
+
+
+st=>start: Start
+    start1=>inputoutput: 启动页
+    cond1=>condition: 上次是否登录?
+    cond2=>condition: 是否启动过引导页?
+    cond3=>condition: 登录是否成功?
+    o1=>inputoutput: 引导页
+    o2=>inputoutput: 登录页
+    o3=>inputoutput: 自动登录
+    o4=>inputoutput: 登录成功
+    o5=>inputoutout: 登录失败
+    e=>end
+
+    st->start1->cond1
+    cond1(no)->o2->cond2
+    cond1(yes)->o3->cond3
+    cond3(no)->o2->cond3
+    cond3(yes)->o4->e
+    cond2(no)->o2->cond3
+    cond2(yes)->o1->o2->cond3
+
+
+</div>
+      </section>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+
+    <!-- Needed for the text editor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.5/ace.js" type="text/javascript" charset="utf-8"></script>
+
+    <script src="underscore-min.js"></script>
+    <script src="raphael-min.js"></script>
+
+    <script src="flowchart-latest.js"></script>
+    <script src="svginnerhtml.min.js"></script>
+
+    <script type="text/javascript">
+
+      function setup_editor(div, nr) {
+
+        var editor_div = div.find(".editor" + nr);
+        var diagram_div = div.find(".diagram" + nr);
+        var theme_div = div.find(".theme" + nr);
+
+        // Setup the editor diagram
+        var editor = ace.edit(editor_div.get(0));
+        editor.setTheme("ace/theme/crimson_editor");
+        editor.getSession().setMode("ace/mode/asciidoc");
+        editor.getSession().on('change', _.debounce(on_change, 100));
+
+        theme_div.change(on_change);
+        on_change();
+
+        function on_change() {
+          try {
+            var diagram = flowchart.parse(editor.getValue());
+
+            editor.getSession().setAnnotations([]);
+
+            // Clear out old diagram
+            diagram_div.html('');
+
+            // Draw
+            if (nr === 1 || nr === 3) {
+              diagram.drawSVG(diagram_div.get(0));
+            } else if (nr === 2) {
+              diagram.drawSVG(diagram_div.get(0), {
+                'flowstate' : {
+                  'past' : { 'fill' : '#CCCCCC', 'font-size' : 12},
+                  'current' : {'fill' : 'yellow', 'font-color' : 'red', 'font-weight' : 'bold'},
+                  'future' : { 'fill' : '#FFFF99'},
+                  'invalid': {'fill' : '#444444'},
+                  'approved' : { 'fill' : '#58C4A3', 'font-size' : 12, 'yes-text' : 'APPROVED', 'no-text' : 'n/a' },
+                  'rejected' : { 'fill' : '#C45879', 'font-size' : 12, 'yes-text' : 'n/a', 'no-text' : 'REJECTED' }
+                }
+              });
+            }
+
+          } catch(err) {
+            var annotation = {
+              type: "error", // also warning and information
+              column: 0,
+              row: 0,
+              text: err.message
+            };
+            if (err && err.loc) {
+              annotation.row    = err.loc.first_line - 1;
+              annotation.column = err.loc.first_column;
+            }
+            editor.getSession().setAnnotations([annotation]);
+            throw err;
+          }
+        }
+      }
+
+      $(document).ready(function() {
+        setup_editor($('#flowchart'), 1);
+      });
+
+      $(document).ready(function() {
+        var i18nextOptions = {
+          fallbackLng: 'en',
+          backend: {
+            referenceLng: 'en',
+            projectId: '8166472e-7ac6-44e5-a53f-96a6ca165e2b'
+          }
+        };
+        var i18nextInstance = window.i18next
+          .use(window.i18nextLocizeBackend)
+          .use(window.i18nextBrowserLanguageDetector)
+          .init(i18nextOptions, function () {
+            window.i18nextJquery.init(i18nextInstance, $, {
+              tName: 't', // --> appends $.t = i18next.t
+              i18nName: 'i18n', // --> appends $.i18n = i18next
+              handleName: 'localize', // --> appends $(selector).localize(opts);
+              selectorAttr: 'data-i18n', // selector for translating elements
+              targetAttr: 'i18n-target', // data-() attribute to grab target element to translate (if diffrent then itself)
+              optionsAttr: 'i18n-options', // data-() attribute that contains options, will load/set if useOptionsAttr = true
+              useOptionsAttr: true, // see optionsAttr
+              parseDefaultValueFromContent: true // parses default values from content ele.val or ele.text
+            });
+
+            $('body').localize();
+          });
+      });
+    </script>
+
+    
+  </body>
+</html>
